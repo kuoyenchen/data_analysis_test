@@ -16,3 +16,151 @@ project_submissions = read_csv(submissions_filename)  # Replace this with your c
 print enrollments[0]
 print daily_engagement[0]
 print project_submissions[0]
+### For each of these three tables, find the number of rows in the table and
+### the number of unique students in the table. To find the number of unique
+### students, you might want to create a set of the account keys in each table.
+
+def get_unique_students(data):
+    unique_students = set()
+    for data_point in data:
+        unique_students.add(data_point['account_key'])
+    return unique_students
+len(enrollments)
+unique_enrolled_students = get_unique_students(enrollments)
+len(unique_enrolled_students)
+len(daily_engagement)
+unique_engagement_students = get_unique_students(daily_engagement)
+len(unique_engagement_students)
+len(project_submissions)
+unique_project_submitters = get_unique_students(project_submissions)
+len(unique_project_submitters)
+
+for enrollment in enrollments:
+    student = enrollment['account_key']
+    if student not in unique_engagement_students:
+        print enrollment
+        break
+        
+num_problem_students = 0
+for enrollment in enrollments:
+    student = enrollment['account_key']
+    if (student not in unique_engagement_students and 
+            enrollment['join_date'] != enrollment['cancel_date']):
+        print enrollment
+        num_problem_students += 1
+
+num_problem_students
+
+paid_students = {}
+for enrollment in non_udacity_enrollments:
+    if (not enrollment['is_canceled'] or
+            enrollment['days_to_cancel'] > 7):
+        account_key = enrollment['account_key']
+        enrollment_date = enrollment['join_date']
+        if (account_key not in paid_students or
+                enrollment_date > paid_students[account_key]):
+            paid_students[account_key] = enrollment_date
+len(paid_students)
+
+def within_one_week(join_date, engagement_date):
+    time_delta = engagement_date - join_date
+    return time_delta.days < 7
+
+def remove_free_trial_cancels(data):
+    new_data = []
+    for data_point in data:
+        if data_point['account_key'] in paid_students:
+            new_data.append(data_point)
+    return new_data
+
+paid_enrollments = remove_free_trial_cancels(non_udacity_enrollments)
+paid_engagement = remove_free_trial_cancels(non_udacity_engagement)
+paid_submissions = remove_free_trial_cancels(non_udacity_submissions)
+
+print len(paid_enrollments)
+print len(paid_engagement)
+print len(paid_submissions)
+
+paid_engagement_in_first_week = []
+for engagement_record in paid_engagement:
+    account_key = engagement_record['account_key']
+    join_date = paid_students[account_key]
+    engagement_record_date = engagement_record['utc_date']
+
+    if within_one_week(join_date, engagement_record_date):
+        paid_engagement_in_first_week.append(engagement_record)
+
+
+subway_project_lesson_keys = ['746169184', '3176718735']
+
+pass_subway_project = set()
+
+for submission in paid_submissions:
+    project = submission['lesson_key']
+    rating = submission['assigned_rating']    
+
+    if ((project in subway_project_lesson_keys) and
+            (rating == 'PASSED' or rating == 'DISTINCTION')):
+        pass_subway_project.add(submission['account_key'])
+
+len(pass_subway_project)
+
+passing_engagement = []
+non_passing_engagement = []
+
+for engagement_record in paid_engagement_in_first_week:
+    if engagement_record['account_key'] in pass_subway_project:
+        passing_engagement.append(engagement_record)
+    else:
+        non_passing_engagement.append(engagement_record)
+
+print len(passing_engagement)
+print len(non_passing_engagement)
+
+passing_engagement_by_account = group_data(passing_engagement,
+                                           'account_key')
+non_passing_engagement_by_account = group_data(non_passing_engagement,
+                                               'account_key')
+
+print 'non-passing students:'
+non_passing_minutes = sum_grouped_items(
+    non_passing_engagement_by_account,
+    'total_minutes_visited'
+)
+describe_data(non_passing_minutes.values())
+​
+print 'passing students:'
+passing_minutes = sum_grouped_items(
+    passing_engagement_by_account,
+    'total_minutes_visited'
+)
+describe_data(passing_minutes.values())
+
+print 'non-passing students:'
+non_passing_lessons = sum_grouped_items(
+    non_passing_engagement_by_account,
+    'lessons_completed'
+)
+describe_data(non_passing_lessons.values())
+
+print 'passing students:'
+passing_lessons = sum_grouped_items(
+    passing_engagement_by_account,
+    'lessons_completed'
+)
+describe_data(passing_lessons.values())
+
+print 'non-passing students:'
+non_passing_visits = sum_grouped_items(
+    non_passing_engagement_by_account, 
+    'has_visited'
+)
+describe_data(non_passing_visits.values())
+
+print 'passing students:'
+passing_visits = sum_grouped_items(
+    passing_engagement_by_account,
+    'has_visited'
+)
+describe_data(passing_visits.values())
+len(paid_engagement_in_first_week)
